@@ -1,0 +1,189 @@
+!*************************************************************************!
+!VIGA ENGASTADA - ELEMENTO EPT - CURSO BÁSICO DE ANSYS 
+!PROGRAMADORES: BÁRBARA CHAGAS E FELIPE QUEVEDO 
+!UNIDADES: kN,cm
+!ÚLTIMA REVISÃO: 06/11/2020 - Concluído
+!*************************************************************************!
+!
+! Algumas dicas:
+!
+! - O simbolo '!' indica comentário e não é lido pelo ANSYS
+! - A linguagem não diferencia maiúsculo de minúsculo
+! - Recomenda-se colocar em maiúsculo os comandos do ANSYS
+! - Use um sistema de unidades coerentes
+!
+!-------------------------------------------------------------------------!
+!****_                    1. INICIALIZAÇÃO DO ANSYS                  _****!
+!-------------------------------------------------------------------------!
+! É sempre bom fazer a inicialização do ANSYS. Essa parte é reservada
+! para comandos que limpam o modelo, configuram a pasta de trabalho, ou
+! fornecem alguns aspectos da janela (cores), selecionam o tipo de análise.
+!
+! 1.1 Limpar o modelo
+FINISH			! Encerra possíveis processos abertos anteriormente 
+/CLEAR,NOSTART  	! Limpa o modelo                                                                                                                                                     
+!
+!- ------------------------------------------------------------------------!
+!****_                    2. PARÂMETROS DE ENTRADA                   _****!
+!-------------------------------------------------------------------------!  
+! Nessa parte é interessante definir alguns parâmetros do seu modelo que
+! serão utilizadas posteriormente, como constantes dos materiais, 
+! geometria, parâmetros referente a discretização da malha e elementos.
+! É bom colocar comentários para que possa saber o que é cada parâmetro. 
+!
+! Parâmetros geométricos
+L 		= 400   	! [cm] Comprimento da viga
+b 		= 25    	! [cm] Base da viga
+h 		= 50    	! [cm] Altura da viga
+!
+! Parâmetros referente aos materiais
+material	= 1		! 1 - material 1, 2 - material 2
+E1		= 2500		! [kN/cm²] Módulo de elasticidade
+nu1		= 0.2		! [adm] Coeficiente de Poisson
+E2		= 5000		! [kN/cm²] Módulo de elasticidade
+nu2		= 0.2		! [adm] Coeficiente de Poisson
+!
+! Parâmetros referente a discretização da malha
+tipointeg	= 1		! 0 completa ou 1 reduzida
+tipoelem	= 2		! 1 PLANE182 ou 2 PLANE183
+formaelem	= 0		! 0 quadrilatero ou 1 triangular
+tipomalha	= 0 		! 0 livre ou 1 mapeada
+divl 		= 20 		! [un] Número de elementos na largura 
+!divb 		= 4  		! [un] Número de elementos na base
+divh 		= 6  		! [un] Número de elementos na altura
+!
+! Parâmetros referente a condição de contorno
+formaapp	= 1		! forma de aplicação: 	1 - concentrada dividida em cima e em baixo
+				!			2 - concentrada em cima
+				!			3 - concentrada em baixo
+				!			4 - concentrada no meio
+P 		= 100		! [kN] carga concentrada aplicada
+!
+!
+!- ------------------------------------------------------------------------!
+!****_                    3. PRÉ-PROCESSAMENTO                       _****!
+!-------------------------------------------------------------------------!
+! Nessa parte é construído o modelo antes de fazer a solução. Para que
+! os comandos funcionem, deve iniciar a seção com '/PREP7'                                                                   
+/PREP7
+! 
+! 3.1 Adiciona dois materiais da biblioteca a tua lista de materiais                                                                                                               ! 
+MPTEMP,1,0     		! Define a tabela de temperaturas
+MPDATA,EX,1,,E1 	! Define o módulo de young
+MPDATA,PRXY,1,,nu1     	! Define o coeficiente de Poisson
+!
+MPTEMP,1,0     		! Define a tabela de temperaturas
+MPDATA,EX,2,,E2		! Define o módulo de young
+MPDATA,PRXY,2,,nu2     	! Define o coeficiente de Poisson
+!
+! 3.2 Adiciona dois elementos da bibliteca a tua lista de elementos e
+! configura os seus parâmetros de comportamento
+ET,1,PLANE182   
+KEYOPT,1,1,tipointeg	! tipo de integração: 0 = completa 1 = reduzida
+KEYOPT,1,3,3		! comportamento: 3 estado plano de tensão com espessura
+KEYOPT,1,6,0		! formulação apenas com deslocamentos
+!
+ET,2,PLANE183
+KEYOPT,2,1,formaelem	! forma do elemento: 0 quadrilatero e 1 triangular
+KEYOPT,2,3,3		! comportamento: 3 estado plano de tensão com espessura
+KEYOPT,2,6,0		! formulação apenas com deslocamentos
+!
+! 3.3 Atribui as constantes reais aos elementos
+R,1,b
+R,2,b
+!
+! 3.4 Criação do modelo geométrico (sólido)
+BLC4,0,0,L,h/2  
+BLC4,0,h/2,L,h/2 
+NUMMRG,ALL, , , ,LOW 	! juntar keypoints e linhas coincidentes
+!	        	                                                          
+! 3.5 Define atributos da malha nos elementos geométricos
+ALLSEL,ALL		! Reseta a seleção selecionando tudo
+LSEL,S,LOC,Y,0,h,, 	! Seleciona linhas pela localização
+LSEL,R,LOC,X,L/2,L/2 	! Seleciona linhas pela localização
+LESIZE,ALL,,,divl	! Especifica a divisão dos elementos
+!
+ALLSEL,ALL		! Reseta a seleção selecionando tudo
+LSEL,S,LOC,X,0 		! Seleciona linhas pela localização
+LSEL,A,LOC,X,L	 	! Seleciona linhas pela localização
+LESIZE,ALL,,,divh/2	! Especifica a divisão dos elementos
+ALLSEL,ALL        
+!
+! 3.6 Aplicação das restrições no modelo sólido 
+ALLSEL,ALL   		! Seleciona tudo (geometria, nós e elementos)                                                   
+LSEL,S,LOC,X,0 		! Seleciona a area na cota x = 0
+DL,ALL, ,ALL,0 
+! 
+! 3.7 Aplicação das cargas nos pontos chaves do modelo sólido 
+ALLSEL,ALL			! Seleciona tudo
+*IF,formaapp,EQ,1,THEN 
+	KSEL,S,LOC,X,L,,, 	! Seleciona nós
+	FK,ALL,FY,-P/3,,,      	! Aplica força
+*ELSEIF,formaapp,EQ,2,THEN
+	KSEL,S,LOC,X,L,,, 	! Seleciona nós
+	KSEL,R,LOC,Y,0		
+	FK,ALL,FY,-P,,,      	! Aplica força
+*ELSEIF,formaapp,EQ,3,THEN
+	KSEL,S,LOC,X,L,,, 	! Seleciona nós
+	KSEL,R,LOC,Y,h
+	FK,ALL,FY,-P,,,      	! Aplica força
+*ELSEIF,formaapp,EQ,4,THEN
+	KSEL,S,LOC,X,L,,, 	! Seleciona nós
+	KSEL,R,LOC,Y,h/2
+	FK,ALL,FY,-P,,,      	! Aplica força
+*ENDIF
+!
+! 3.8 Definindo o material e o elemento antes de criar a malha
+MAT,material
+TYPE,tipoelem
+!
+! 3.9 Cria a malha
+ALLSEL,ALL		! Seleciona tudo (geometria, nós e elementos) 
+MSHAPE,formaelem,2D	! 0 - quadrilatero, 1 - triangular
+MSHKEY,tipomalha	! 0 - livre, 1 - mapeada
+AMESH,ALL       	! cria a malha
+!
+! 3.10 Mescla nós coincidentes e compacta a numeração
+! Para modelos grandes evita que haja nós duplicados                                                             
+NUMMRG,ALL, , , ,LOW 
+NUMCMP,ALL  
+!
+! 3.11 Faz a visualização do modelo em MEF                                                                                                                                 
+/REPLOT			! Replota a tela             
+EPLOT			! Plota os elementos                        
+/ESHAPE,1.0         	! Extruda a espessura
+!
+! 3.12 Saida dos nós e elementos
+ALLSEL,ALL		! Seleciona tudo
+/STAT,GLOBAL            ! Exibe o status da análise, com quantidade de nós,
+                        ! elementos, materiais, condições de contorno, etc.
+NLIST,ALL, , ,XYZ,NODE,NODE,NODE ! Exibe a lista dos nós com coordenadas
+ELIST,ALL,,,0,0                  ! Exibe a lista dos elementos e seus nós 
+!
+!- ------------------------------------------------------------------------!
+!****_                    4. PROCESSAMENTO                           _****!
+!-------------------------------------------------------------------------!
+! Nessa parte é configurada a solução e executada. Para que
+! os comandos funcionem, deve iniciar a seção com '/SOLU'                                                                   
+/SOLU	 
+!
+ANTYPE,0,NEW		! Especifica o tipo de análise			
+ALLSEL,ALL          	! Seleciona tudo (geometria, nós e elementos)
+SOLVE			! Resolve o modelo                                                   
+!
+!- ------------------------------------------------------------------------!
+!****_                    5. POS-PROCESSAMENTO                       _****!
+!-------------------------------------------------------------------------!
+! Nessa parte os resultados são acessados. Em geral cada comandos
+! gera uma visualização ou uma saída de dados em texto. Para que
+! os comandos funcionem, deve iniciar a seção com '/POST1'                                                                   
+/POST1
+!
+PRRSOL, 		! Mostra as reações em arquivo de texto
+PLDISP,1 		! Plota apenas a deformada
+PLNSOL,U,Y,1,20  	! Plota a solução nodal em y   
+!                                                                            
+!- ------------------------------------------------------------------------!
+!****_                     FIM DO SCRIPT                             _****!
+!-------------------------------------------------------------------------!
+ 

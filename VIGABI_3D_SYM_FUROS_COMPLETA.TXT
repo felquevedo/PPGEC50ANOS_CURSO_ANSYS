@@ -1,0 +1,414 @@
+!*************************************************************************!
+!VIGA BIAPOIADA - ELEMENTO 3D FUROS - CURSO BÁSICO DE ANSYS 
+!PROGRAMADORES: BÁRBARA CHAGAS E FELIPE QUEVEDO 
+!UNIDADES: kN,cm
+!ÚLTIMA REVISÃO: 06/11/2020 - Concluído
+!*************************************************************************!
+!
+! Algumas dicas:
+!
+! - O simbolo '!' indica comentário e não é lido pelo ANSYS
+! - A linguagem não diferencia maiúsculo de minúsculo
+! - Recomenda-se colocar em maiúsculo os comandos do ANSYS
+! - Use um sistema de unidades coerentes
+!
+!-------------------------------------------------------------------------!
+!****_                    1. INICIALIZAÇÃO DO ANSYS                  _****!
+!-------------------------------------------------------------------------!
+! É sempre bom fazer a inicialização do ANSYS. Essa parte é reservada
+! para comandos que limpam o modelo, configuram a pasta de trabalho, ou
+! fornecem alguns aspectos da janela (cores), selecionam o tipo de análise.
+!
+! 1.1 Limpar o modelo
+FINISH			! Encerra possíveis processos abertos anteriormente 
+/CLEAR,NOSTART  	! Limpa o modelo                                                                                                                                                     
+!
+!-------------------------------------------------------------------------!
+!****_                    2. PARÂMETROS DE ENTRADA                   _****!
+!-------------------------------------------------------------------------!  
+! Nessa parte é interessante definir alguns parâmetros do seu modelo que
+! serão utilizadas posteriormente, como constantes dos materiais, 
+! geometria, parâmetros referente a discretização da malha e elementos.
+! É bom colocar comentários para que possa saber o que é cada parâmetro. 
+!
+! Parâmetros geométricos da viga
+L 		= 500   	! [cm] Comprimento da viga
+b 		= 20    	! [cm] Base da viga
+h 		= 40    	! [cm] Altura da viga
+!
+! Parâmetros geométricos da placa de apoio
+e1		= 5		! [cm] Espessura da placa de apoio
+Lp1		= 20		! [cm] Comprimento da placa de apoio
+e2		= 5		! [cm] Espessura da placa de carga
+Lp2		= 20		! [cm] Comprimento da placa de carga
+!
+! Opção da existência dos furos
+furar		= 0		! 0- sem furos 1- faz os furos
+!
+! Parâmetros geométricos dos furos circulares
+Lf1		= 80		! Cota x do furo 1
+cf1		= h/2		! Cota y do furo 1
+df1		= 20		! Diâmetro do furo 1
+Lf2		= 120		! Cota x do furo 2
+cf2		= h/2		! Cota y do furo 2
+df2		= 20		! Diâmetro do furo 2
+d1		= h/2		! Distância entre a borda do furo 1
+!				! e o limite da região dos furos
+d2		= h/2		! Distância entre a borda do furo 2
+!				! e o limite da região dos furos
+!
+! Parâmetros geométricos do furo central
+Af3		= 50		! Largura do furo 3 central
+Bf3		= 20		! Altura do furo 3
+Cf3		= h/2-b/2	! Altura do banzo inferio
+!
+! Parâmetros da discretização da malha
+nL1		= 4		! elementos nas linhas horizontais ao longo de L1
+nL2		= 6		! elementos nas linhas horizontais ao longo de L2
+nL3		= 30		! elementos nas linhas horizontais ao longo de L3
+mL3		= -1/4		! razão entre os elementos ao das linhas hori. a longo de L3
+nL4		= 20		! elementos nas linhas horizontais ao longo de L4	
+mL4		= 1/2		! razão entre os elementos ao das linhas hori. a longo de L4
+nL5		= 2		! elementos nas linhas horizontais ao longo de L5
+nL6		= 5		! elementos nas linhas horizontais ao longo de L6
+nh		= 10		! elementos nas linhas verticais ao longo da altura
+ne1		= 2		! elementos na espessura da placa de apoio
+ne2		= 2		! elementos na espessura da placa de carga
+nbs		= 4		! elementos na altura do banzo superior do furo 3
+nbi		= 4		! elementos na altura do banzo inferior do furo 3
+nb		= 4		! elementos na altura do furo 3
+ndf1		= 20		! elementos ao longo do diâmetro do furo 1
+ndf2		= 20		! elementos ao longo do diâmetro do furo 2
+!
+! Parâmetros constitutivos da viga
+modeloc		= 1			! 0-linear isotrópico, 1-von-Mises
+Ec		= 2500			! [kN/cm²] Módulo de elasticidade
+nuc		= 0.2			! [adm] Coeficiente de Poisson
+roc		= 2500*(1/10**2)**3	! [kg/cm³] Densidade do concreto
+fclim		= 3.5			! [kN/cm²] Limite de resistência (modelo 2)
+Ec2		= 3			! [kN/cm²] Módulo de elasticidade do segundo trecho
+!
+! Parâmetros constitutivos das placas de apoio
+Es		= 21000			! [kN/cm²] Módulo de elasticidade
+nus		= 0.3		0	! [adm] Coeficiente de Poisson
+ros		= 7850*(1/10**2)**3	! [kg/cm³] Densidade do aço
+!
+!
+! Parâmetros referente ao primeiro passo de carga
+g		= 9.8		! [m/s^2] aceleração da gravidade
+t1		= 1		! [dia] tempo no final do passo
+dt1		= 0.1		! [dia] supasso de tempo
+dt1max		= 0.1		! [dia] máximo subpasso de tempo
+!
+! Parâmetros referente ao segundo passo de carga
+P 		= 50 		! [kN] carga concentrada aplicada
+t2		= 5		! [dia] tempo no final do passo
+dt2		= 1		! [dia] supasso de tempo
+dt2max		= 1		! [dia] máximo subpasso de tempo
+!
+! Parâmetros referente ao terceiro passo de carga
+t3		= 10		! [dia] tempo no final do passo
+dt3		= 1		! [dia] supasso de tempo
+dt3max		= 1		! [dia] máximo subpasso de tempo
+!
+!-------------------------------------------------------------------------!
+!****_                    3. PRÉ-PROCESSAMENTO                       _****!
+!-------------------------------------------------------------------------!
+! Nessa parte é construído o modelo antes de fazer a solução. Para que
+! os comandos funcionem, deve iniciar a seção com '/PREP7'                                                                   
+/PREP7
+! 
+! 3.1 Adiciona um material da biblioteca a tua lista de materiais                                                                                                               ! 
+MPTEMP,1,0     		! Define a tabela de temperaturas
+MPDATA,EX,1,,Ec		! Define o módulo de young
+MPDATA,PRXY,1,,nuc     	! Define o coeficiente de Poisson
+MPDATA,DENS,1,,roc 	! Define a densidade
+!
+! Define material elastoplástico bilinear 
+! isotrópico von-Mises ao primeiro material
+*IF,modeloc,EQ,1,THEN	
+	TB,BISO,1,1,2, 
+	TBTEMP,0
+	TBDATA,,fclim,Ec2,,,,
+*ENDIF
+!
+MPTEMP,1,0     		! Define a tabela de temperaturas
+MPDATA,EX,2,,Es 	! Define o módulo de young
+MPDATA,PRXY,2,,nus     	! Define o coeficiente de Poisson
+MPDATA,DENS,2,,ros 	! Define a densidade
+!
+! 3.2 Adiciona elemento da bibliteca a tua lista de elementos e
+! configura os seus parâmetros de comportamento
+ET,1,SOLID186   
+KEYOPT,1,2,tipointeg	! tipo de integração: 0 = completa 1 = reduzida
+KEYOPT,1,3,0		! solido ao invés de sólido com camadas
+KEYOPT,1,6,0		! formulação apenas com deslocamentos
+KEYOPT,1,8,0		! se for camada guarda os dados apenas da parte de baixo da camada
+!
+! Algumas variaveis geométricas
+L1 = Lp1
+L6 = Lp2
+L2 = Lf1-df1/2-d1-Lp1
+L3 = d1+df1/2+Lf2-Lf1+df2/2+d2
+L4 = L/2-Af3/2-L1-L2-L3
+L5 = L/2-L1-L2-L3-L4-L6
+!
+! 3.3 Construindo os keypoints do modelo geométricos
+K,1,0,-e1
+K,2,Lp1,-e1
+K,3,0,0
+K,4,Lp1,0
+K,5,L1+L2,0
+K,6,L1+L2+L3,0
+K,7,L1+L2+L3+L4,0
+K,8,L1+L2+L3+L4+L5,0
+K,9,L/2,0
+!
+K,10,L/2-L6-L5,cf3
+K,11,L/2-L6,cf3
+K,12,L/2,cf3
+!
+K,13,L/2-L6-L5,cf3+bf3
+K,14,L/2-L6,cf3+bf3
+K,15,L/2,cf3+bf3
+!
+K,16,0,h
+K,17,Lp1,h
+K,18,L1+L2,h
+K,19,L1+L2+L3,h
+K,20,L1+L2+L3+L4,h
+K,21,L1+L2+L3+L4+L5,h
+K,22,L/2,h
+K,23,L/2-L6,h+e2
+K,24,L/2,h+e2
+!
+! 3.4 Construindo as linhas do modelo geométricos
+L,1,2,nL1
+L,3,4,nL1
+L,4,5,nL2
+L,5,6,nL3,mL3
+L,6,7,nL4,mL4
+L,7,8,nL5
+L,8,9,nL6
+L,10,11,nL5
+L,11,12,nL6
+L,13,14,nL5
+L,14,15,nL6
+L,16,17,nL1
+L,17,18,nL2
+L,18,19,nL3,mL3
+L,19,20,nL4,mL4
+L,20,21,nL5
+L,21,22,nL6
+L,23,24,nL6
+!
+L,1,3,ne1
+L,3,16,nh
+L,2,4,ne1
+L,4,17,nh
+L,5,18,nh
+L,6,19,nh
+L,7,10,nbi
+L,10,13,nb
+L,13,20,nbs
+L,8,11,nbi
+L,11,14,nb
+L,14,21,nbs
+L,21,23,ne2
+L,9,12,nbi
+L,12,15,nb
+L,15,22,nbs
+L,22,24,ne2
+!
+! 3.5 Construindo areas do modelo geométrico
+AL,1,19,2,21
+AL,2,20,12,22
+AL,3,22,13,23
+AL,4,23,14,24
+AL,5,24,15,27,26,25
+AL,6,25,8,28
+AL,10,27,16,30
+AL,7,28,9,32
+AL,11,30,17,34
+AL,17,31,18,35
+!
+! Se não houver furos tem essas áreas 
+! na abertira do furo 3
+*IF,furar,EQ,0,THEN
+	AL,8,26,10,29
+	AL,9,29,11,33
+*ENDIF
+!
+! 3.6 Construindo areas dos furos circulares
+*IF,furar,EQ,1,THEN
+	CYL4,Lf1,cf1,df1/2 
+	CYL4,Lf2,cf2,df2/2   
+	ASBA,4,11
+	ASBA,13,12
+	!
+	! 3.7 Atribuindo qtdade de elementos ao longo do 
+	! diâmetro dos furos circulares
+	ALLSEL,ALL
+	LSEL,S,LOC,X,Lf1-df1/2-d1/4,Lf1+df1/2+(Lf2-Lf1)/4
+	LESIZE,ALL,,,ndf1/4
+	!
+	ALLSEL,ALL
+	LSEL,S,LOC,X,Lf2-df2/2-(Lf2-Lf1)/4,Lf2+df2/2+d2/4
+	LESIZE,ALL,,,ndf2/4
+*ENDIF
+!
+! 3.8 Extrudando áreas das placas
+ALLSEL,ALL
+VOFFST,1,b
+CM,placa1,VOLUME
+!
+ALLSEL,ALL
+VOFFST,10,b
+CMSEL,U,placa1
+CM,placa2,VOLUME
+!
+! 3.8 Extrudando as áreas da viga
+ALLSEL,ALL
+*DO,i,2,9
+	VOFFST,i,b
+*ENDDO
+!	
+*IF,furar,EQ,0,THEN
+	VOFFST,11,b
+	VOFFST,12,b
+*ENDIF
+CMSEL,U,placa1
+CMSEL,U,placa2
+CM,viga,VOLUME
+!
+! 3.9 Trocando o sentido de discretização de uma das linhas extrudadas
+ALLSEL,ALL
+LSEL,S,LOC,X,L1+L2+L3+L4/2,L1+L2+L3+L4/2
+LSEL,R,LOC,Y,h,h
+LSEL,R,LOC,Z,b,b
+LREVERSE,ALL
+!
+! 3.10 Atribuindo qtdade de elementos na espessura
+ALLSEL,ALL
+LSEL,R,LOC,Z,b/2,b/2
+LESIZE,ALL,,,nb
+!
+! 3.11 Juntando elementos geométricos repitidos
+NUMMRG,ALL, , , ,LOW 
+NUMCMP,ALL  
+!
+! 3.12 Criando os elementos finitos nos volumes
+ALLSEL,ALL
+CMSEL,S,placa1
+CMSEL,A,placa2
+MAT,2
+VSWEEP,ALL
+!
+ALLSEL,ALL
+CMSEL,S,viga
+MAT,1
+VSWEEP,ALL
+!
+! Plotando elementos com o número do material
+/PNUM,MAT,1 
+EPLOT
+!
+! Aplicando restrição no apoio da chapa1
+ALLSEL,ALL
+ASEL,R,LOC,Y,-e1
+DA,ALL,UY,0
+DA,ALL,UX,0
+!
+! Aplicando restrição de simetria
+ALLSEL,ALL
+ASEL,S,LOC,X,L/2
+DA,ALL,SYMM
+!
+! Aplicando restrição em Z
+ALLSEL,ALL
+ASEL,S,LOC,Z,0
+DA,ALL,UZ,0
+!
+! Aplicando carga na chapa 2
+!ALLSEL,ALL
+!ASEL,R,LOC,Y,h+e2
+!SFA,ALL,1,PRES,P/(Lp2*b)
+!
+!- ------------------------------------------------------------------------!
+!****_                    4. PROCESSAMENTO                           _****!
+!-------------------------------------------------------------------------!
+! Nessa parte é configurada a solução e executada. Para que
+! os comandos funcionem, deve iniciar a seção com '/SOLU'.
+! Dicas importantes análises não-lineares ou dependentes do tempo:
+! - Para interromper uma análise aperte Ctrl+C
+! - Se vc sair do /SOLU com FINISH, para retomar a análise de onde parou 
+!   nos próximos /SOLU, vc tem de usar ANTYPE,0,RESTART 
+! - Em analises não-lineares é importante:
+!	- Configurar a análise: MainMenu > Solution > analysis Type > Sol'nControls
+!                                                           
+/SOLU	 
+!
+ANTYPE,0,NEW		! Especifica o tipo de análise
+OUTRES,ALL,ALL		! Especifica a solução de tudo para todos subpassos
+KBC,0			! 0 - carga linearmente interpolada entre subpassos
+!			  1 - aplica no primeiro subpasso
+!
+! 4.1 Primeiro passo de carga
+!
+! Definindo tempo no final do passo e incremento de tempo
+TIME,t1			
+DELTIM,dt1,,dt1max
+!
+! Definindo o carregamento de aceleração em y
+ACEL,0,g/1000		
+!
+! Resolvendo o sistema
+ALLSEL,ALL          	
+SOLVE			 
+!
+! 4.2 Segundo passo de carga
+!
+! Definindo tempo no final do passo e incremento de tempo
+TIME,t2			
+DELTIM,dt2,,dt2max	
+!
+! Aplicando carga na chapa 2
+ALLSEL,ALL
+ASEL,R,LOC,Y,h+e2
+SFA,ALL,1,PRES,P/(Lp2*b)
+!
+! Resolvendo o sistema
+ALLSEL,ALL       	
+SOLVE
+!
+! 4.3 Terceiro passo de carga
+!
+! Definindo tempo no final do passo e incremento de tempo
+TIME,t3			
+DELTIM,dt3,,dt3max
+!
+! Resolvendo o sistema	
+ALLSEL,ALL          	
+SOLVE		
+!
+!- ------------------------------------------------------------------------!
+!****_                    5. POS-PROCESSAMENTO                       _****!
+!-------------------------------------------------------------------------!
+! Nessa parte os resultados são acessados. Em geral cada comandos
+! gera uma visualização ou uma saída de dados em texto. Para que
+! os comandos funcionem, deve iniciar a seção com '/POST1'   
+! Dicas importantes análises não-lineares ou dependentes do tempo:
+!	- Utilizar: General Postproc > Results Viewer para ver resultados
+!	- Utilizar: TimeHist Postpro para gráficos    
+!                                                                
+/POST1 
+!
+! Expandir a simetria
+/EXPAND,1,RECT,HALF,L/2,,, ,RECT,FULL,,,, ,RECT,FULL,,,,
+/REPLOT 
+!
+!
+!                                                                            
+!- ------------------------------------------------------------------------!
+!****_                     FIM DO SCRIPT                             _****!
+!-------------------------------------------------------------------------!
